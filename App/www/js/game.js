@@ -40,6 +40,9 @@ var _gamePlay = {
 		// Implement the animation of the 3-2-1 countdown here...
 		//	Assigned: @hillary
 
+		// Resetting the score...
+		this.score = 0;
+
 
 		// Do the delay of 3 seconds...
 		setTimeout(function(){
@@ -110,9 +113,27 @@ var _gamePlay = {
 		} else { this.removeFromGuess(guess); return false; }
 	},
 
-	// Do the submission of guess
-	// 	This also handles the recurring action of the game...
+	// Add up to score
+	//	Adds up to the score on the _gameplay
+	//	This is just a basic score = character.score * number
+	//		The trick is just to increment by this value to the _gamePlay.score
+	//	Assigned: @ellenp 
+	addUpToScore: function(character, layer){
+		var prevScore = this.score,
+			nextScore = prevScore + (_characters[character].value * this.playerStats.allowableClicks);
 
+		this.score = nextScore;
+		_animation.updateScore(prevScore, nextScore, layer); //didto ni i.butang sa addUpToScore
+		
+
+	},
+
+	// Update my gameStats...
+	//	This is invoked after a correct guess. Diri ang action para mu paspas ug magkadaghan ba ang guesses...
+	//	Assigned: @jantaps2k + @ellenp
+	updateGameStats: function(){
+
+	},
 
 
 	// Game Timer Structure
@@ -307,15 +328,6 @@ var _board = {
 		}
 
 		return result;
-	},
-
-	// Add up to score
-	//	Adds up to the score on the _gameplay
-	//	This is just a basic score = character.score * number
-	//		The trick is just to increment by this value to the _gamePlay.score
-	//	Assigned: @ellenp 
-	addUpToScore: function(character, number){
-
 	}
 
 }
@@ -406,9 +418,14 @@ var _app = {
 
 		// Load the main layer
 		var mainLayer = this.initMainGameLayer(_width, _height);
-
 		// Add to container
 		this.app.add(mainLayer);
+
+		// Load the postGameLayer
+		var postGameLayer = this.initPostGameLayer(_width, _height);
+		this.app.add(postGameLayer);
+
+
 		// Put to screens array for reference in below objects
 		this.screens = [mainLayer];		
 	},
@@ -550,6 +567,7 @@ var _app = {
 
 
 				// Add up the onclick + ontouch event..
+				// Diri ang methods ma map on...
 				gameGridElement.on('touchstart', function(evt){
 
 				}).on('touchend', function(evt){
@@ -568,6 +586,10 @@ var _app = {
 							myGuessCorrect = _board.checkIfGuessCorrect(_gamePlay.myGuess, _gamePlay.target);
 							if (myGuessCorrect){
 								console.log("Correct guess!");
+
+								// Add up the score...
+								_gamePlay.addUpToScore(_gamePlay.target, target.getLayer());
+								
 
 								// Re shuffle event...
 								_gamePlay.target = _gamePlay.getRandomCharacter(0);
@@ -606,7 +628,7 @@ var _app = {
 	},
 
 
-	// Method: initialize game screen: clickable grid...
+	// Method: initialize game screen: clickable grid... currently not used... :3
 	initClickableGrid: function(w, h, dimension){
 		// Put the clickable grid...
 		var clickableGrid = new Kinetic.Group({ width:w*0.8, height:h*0.8, x:w*0.1, y:h*0.1 });
@@ -671,7 +693,7 @@ var _app = {
 		return clickableGrid;
 	},
 
-	// Method: initialize the grid for character placement...
+	// Method: initialize the grid for character placement... currently not used... :3
 	initCharacterGrid: function(w, h, dimension){
 		var characterGrid = new Kinetic.Group({ width:w*0.8, height:h*0.8, x:w*0.15, y:h*0.1 });
 		var gridElement = null; var offset = w*0.025;
@@ -722,7 +744,7 @@ var _app = {
 		}
 	},
 
-	// Method: draws the game stats screen...
+	// Method: initializes and draws the game stats screen...
 	initGameStatsScreen: function(w, h){
 		var gameStatsContainer = new Kinetic.Group({ width:w+4, height:h*0.12, x:0, y:h*0.05 });
 
@@ -747,6 +769,7 @@ var _app = {
 			x: gameStatsContainer.width() - 70, y:2
 		}); gameStatsContainer.add(scoreText);
 
+		// Then the timer bar...
 		var timerBarBG = new Kinetic.Rect({
 			x:6, y:timerText.height() + 7, height:5, width:gameStatsContainer.width() * 0.95, fill:"#ac7441", stroke:"#29230b"
 		}); gameStatsContainer.add(timerBarBG);
@@ -760,6 +783,31 @@ var _app = {
 
 
 		return gameStatsContainer;
+	},
+
+
+
+
+	// Post Game Layer Methods and stuff
+	initPostGameLayer: function(w, h){
+		var postGameLayer = new Kinetic.Layer({ width:w, height:h, x:0, y:0, id:"POST_GAME_LAYER" });
+
+		// Get the grouping...
+		var grp = new Kinetic.Group({ width:w*0.8, height:h*0.4, x:(w - w*0.8)/2, y:(h - h*0.4)/2 });
+
+		// Get the background...
+		var bg = new Kinetic.Rect({ width:grp.width(), height:grp.height(), x:0, y:0, fill:"#ac7441", stroke:"#29230b", strokeWidth:3, cornerRadius: grp.width()*0.03, });
+		grp.add(bg);
+
+
+		// Get the button groups...
+		//	Play again button...
+		var playAgainBtn = new Kinetic.Group({ x:0, y:0, width:grp.width(), height:grp.height() });
+
+
+
+		postGameLayer.add(grp);
+		return postGameLayer;
 	}
 
 
@@ -871,6 +919,21 @@ var _animation = {
 				elems[i].children[0].fill('rgba(0,255,0,0.0');
 			}
 		} gameLayer.draw();
+	},
+
+	// Animating the scoresheets...
+	updateScore: function(previousScore, currentScore, layer){
+		var scoreObj = layer.find("#GAME_SCORE_TXT")[0];
+		scoreObj.text(this.fiveDigit(currentScore));
+
+		layer.draw();
+
+	},
+
+	// Helper: gets a number to a five-digit one...
+	fiveDigit: function(number){
+		var s = "000000000" + number;
+		return s.substr(s.length-5);
 	}
 
 }
