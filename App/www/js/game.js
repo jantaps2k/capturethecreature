@@ -113,6 +113,11 @@ var _gamePlay = {
 		} else { this.removeFromGuess(guess); return false; }
 	},
 
+	// Invoke the end-game actions...
+	callEndGame: function(){
+		_animation.slidePostGameDown();
+	},
+
 	// Add up to score
 	//	Adds up to the score on the _gameplay
 	//	This is just a basic score = character.score * number
@@ -151,7 +156,9 @@ var _gamePlay = {
 			if (this.timer != null){
 				clearInterval(this.timer);
 				this.timer = null;
-			} _gamePlay.stopPlaying();
+			} 
+			_gamePlay.stopPlaying();
+			_gamePlay.callEndGame();
 		},
 		tiktok: function(txt, lyer){
 			this.time--;
@@ -427,7 +434,7 @@ var _app = {
 
 
 		// Put to screens array for reference in below objects
-		this.screens = [mainLayer];		
+		this.screens = [mainLayer, postGameLayer];		
 	},
 
 	// Methods...
@@ -793,19 +800,73 @@ var _app = {
 		var postGameLayer = new Kinetic.Layer({ width:w, height:h, x:0, y:0, id:"POST_GAME_LAYER" });
 
 		// Get the grouping...
-		var grp = new Kinetic.Group({ width:w*0.8, height:h*0.4, x:(w - w*0.8)/2, y:(h - h*0.4)/2 });
+		var grp = new Kinetic.Group({ width:w*0.8, height:h*0.4, x:(w - w*0.8)/2, y:(h - h*0.4)/2, id:"POST_GAME_CONT" });
+		grp.y( 0 - grp.height()); // Set it to the hidden position;
+
 
 		// Get the background...
 		var bg = new Kinetic.Rect({ width:grp.width(), height:grp.height(), x:0, y:0, fill:"#ac7441", stroke:"#29230b", strokeWidth:3, cornerRadius: grp.width()*0.03, });
 		grp.add(bg);
 
+		// Title Message
+		var titleText = new Kinetic.Text({ x:0, y:3, width:grp.width(),  height:grp.height(), text:"Game Over!",
+												fill:"white", align:"center" });
+		grp.add(titleText);
+		// Score counter...
 
-		// Get the button groups...
+		// Experience counter...
+
+		// Get the button groups... Button group constants..
+		var buttonWidth = grp.width()*0.33, buttonHeight = grp.height()*0.10;
+
 		//	Play again button...
-		var playAgainBtn = new Kinetic.Group({ x:0, y:0, width:grp.width(), height:grp.height() });
+		var playAgainBtn  = new Kinetic.Group({ x:0, y:grp.height()*0.7, width:buttonWidth, height:buttonHeight }),
+			playAgainBG   = new Kinetic.Rect({ x:0, y:0, fill:"blue", width:playAgainBtn.width(), height:playAgainBtn.height()}),
+			playAgainText = new Kinetic.Text({ x:0, y:0, text:"Play Again?", width:playAgainBG.width(), 
+												height:playAgainBG.height(), fill:"white", align:"center" });
+
+
+		playAgainBtn.add(playAgainBG); playAgainBtn.add(playAgainText);
+		playAgainBtn.on('touchstart', function(evt){
+
+		}).on('touchend', function(evt){
+			//postGameLayer.
+			//var target = evt.targetNode.getLayer().find("#POST_GAME_CONT")[0];
+			//console.log(target);
+
+			//var i = 0;
+			//var animatet = new Kinetic.Animation(function(frame){
+				//console.log(frame);
+
+				//console.log( target.y() );
+			//	target.x( target.x() + 1);
+			//}); animatet.start();
+
+			_animation.slidePostGameUp();
+
+		}); grp.add(playAgainBtn);
+
+		// Share to Facebook Button...
+		playAgainBtn  = new Kinetic.Group({ x:buttonWidth, y:grp.height()*0.7, width:buttonWidth, height:buttonHeight }),
+		playAgainBG   = new Kinetic.Rect({ x:0, y:0, fill:"blue", width:playAgainBtn.width(), height:playAgainBtn.height()}),
+		playAgainText = new Kinetic.Text({ x:0, y:0, text:"Share Score!", width:playAgainBG.width(),
+											 height:playAgainBG.height(), fill:"white", align:"center" });
+
+		playAgainBtn.add(playAgainBG); playAgainBtn.add(playAgainText);
+		grp.add(playAgainBtn);
+
+		// Back to Main Menu Button...
+		playAgainBtn  = new Kinetic.Group({ x:buttonWidth*2, y:grp.height()*0.7, width:buttonWidth, height:buttonHeight }),
+		playAgainBG   = new Kinetic.Rect({ x:0, y:0, fill:"blue", width:playAgainBtn.width(), height:playAgainBtn.height()}),
+		playAgainText = new Kinetic.Text({ x:0, y:0, text:"Back to Menu", width:playAgainBG.width(), 
+											height:playAgainBG.height(), fill:"white", align:"center" });
+
+		playAgainBtn.add(playAgainBG); playAgainBtn.add(playAgainText);
+		grp.add(playAgainBtn);
 
 
 
+		
 		postGameLayer.add(grp);
 		return postGameLayer;
 	}
@@ -856,6 +917,39 @@ var _animation = {
 
 		// Start the animation!
 		exciteMotion.start();
+	},
+
+	slidePostGameUp: function(){
+		var postGame = _app.screens[1].find('#POST_GAME_CONT')[0];
+
+		//Slide up action
+		var slideUp = new Kinetic.Animation(function(frame){
+			postGame.y( postGame.y() - 5 ); postGame.getLayer().draw();
+			if (postGame.y() < (0 - postGame.height())) {
+				this.stop(); _animation.slidePostGameDown();
+			}
+		}); slideUp.start(); 
+
+		//Excite action...
+		
+	},
+	slidePostGameDown: function(){
+		var postGame = _app.screens[1].find('#POST_GAME_CONT')[0];
+
+		var slideDown = new Kinetic.Animation(function(frame){
+			postGame.y( postGame.y() + 5 ); postGame.getLayer().draw();
+			if (postGame.y() > ((postGame.getLayer().height() * 0.6) - (postGame.height() / 2))  ) {
+				this.stop();
+				extra.start();
+			}
+		}); slideDown.start();
+
+		var extra = new Kinetic.Animation(function(frame){
+			postGame.y( postGame.y() - 5 ); postGame.getLayer().draw();
+			if (postGame.y() <  ((postGame.getLayer().height() / 2) - (postGame.height() / 2)) ){
+				this.stop();
+			}
+		});
 	},
 
 
