@@ -397,11 +397,15 @@ var _app = {
 			this.mainMenuBackground = new Image(); this.mainMenuBackground.src = "img/BG.png";
 			this.gameScreenBackground = new Image(); this.gameScreenBackground.src = "img/gameBG.png";
 
+
+			this.gameBackground = new Image(); this.gameBackground.src = "img/background.jpg";
+
 		},
 
 		// Image resources...
-		mainMenuBackground:null,
-		gameScreenBackground:null
+		mainMenuBackground: 		null,
+		gameScreenBackground: 		null,
+		gameBackground: 	  		null
 
 
 	},
@@ -419,27 +423,248 @@ var _app = {
 		    height: _height
 		});
 
-		// Print out the screen width and height:
-		console.log(_width + " x " + _height);
-
-
 		// Load the main layer
-		var mainLayer = this.initMainGameLayer(_width, _height);
+		//var mainLayer = this.initMainGameLayer(_width, _height);
 		// Add to container
-		this.app.add(mainLayer);
+		//this.app.add(mainLayer);
+
+
+		/*** --  Final na ni na version here! :) -- ***/
+		// Main Menu and Game Background
+		var backgroundMainMenu = this.initBackgroundMainMenu(_width, _height);
+		this.app.add(backgroundMainMenu);
+
+		// In-gameplay stats
+		var gameStatsLayer = this.initGameStatsLayer(_width, _height);
+		this.app.add(gameStatsLayer);
+
+		// In-gameplay game board
+		var gameBoardLayer = this.initGameBoardLayer(_width, _height);
+		this.app.add(gameBoardLayer);
+
+		
+
+
+		// Leaderboard pane...
+		var leaderBoardLayer = this.initLeaderBoardLayer(_width, _height);
+		this.app.add(leaderBoardLayer);
+
+
+
 
 		// Load the postGameLayer
-		var postGameLayer = this.initPostGameLayer(_width, _height);
-		this.app.add(postGameLayer);
+		//var postGameLayer = this.initPostGameLayer(_width, _height);
+		//this.app.add(postGameLayer);
 
 
 		// Put to screens array for reference in below objects
-		this.screens = [mainLayer, postGameLayer];		
+		//this.screens = [mainLayer, postGameLayer];
+		this.screens = [backgroundMainMenu, gameStatsLayer, gameBoardLayer, leaderBoardLayer];		
 	},
 
 	// Methods...
 	appWidth:  function(){ return this.app.width();  },
 	appHeight: function(){ return this.app.height(); },
+
+
+
+
+
+	// Method: (NEW) gets on the layer for the background and the main menu... :)
+	initBackgroundMainMenu: function(w, h){
+		var mainMenuLayer = new Kinetic.Layer({
+			width:w, height:h*2, x:0, y:0, id:"BACKGROUND_MENU_LAYER"
+		});
+
+		// Background...
+		var bg = new Kinetic.Image({
+			image: this.resources.gameBackground, width:mainMenuLayer.width(), height:mainMenuLayer.height()
+		}); mainMenuLayer.add(bg);
+
+		// Button/s
+		// Add the button...
+		var startGameButton = new Kinetic.Rect({ 	
+								width: w*0.6, 
+								height: h*0.1, 
+								x: w*0.2, 
+								y: h*0.7,
+								fill:"#68b646", 
+								cornerRadius:  w*0.03,
+								stroke:"#c3da42",
+
+								fillLinearGradientStartPoint: {x:-50, y:-50},
+								fillLinearGradientEndPoint: {x:50,y:50},
+								fillLinearGradientColorStops: [0, 'red', 300, 'yellow']  
+							});
+
+		var leaderBoardBtn = new Kinetic.Rect({ 	
+								width: w*0.6, 
+								height: h*0.05, 
+								x: w*0.2, 
+								y: h*0.82,
+								fill:"#68b64c", 
+								cornerRadius:  w*0.03,
+								stroke:"#c3da42",
+
+								fillLinearGradientStartPoint: {x:-50, y:-50},
+								fillLinearGradientEndPoint: {x:50,y:50},
+								fillLinearGradientColorStops: [0, 'red', 300, 'yellow']  
+							});
+
+		
+		// Add the animation...
+		startGameButton.on('touchstart', function(evt){
+			var obj = evt.targetNode;
+			obj.fill('#c3da42'); 
+			obj.draw();
+
+		}).on('touchend', function(evt){
+
+			var obj = evt.targetNode;
+			obj.fill('#68b646'); 
+
+			obj.draw();
+			_animation.animateNewGame();
+			//_gamePlay.startGame(evt);
+		});
+
+
+		// Leader Board Btn Action
+		leaderBoardBtn.on('touchstart', function(evt){
+
+		}).on('touchend', function(evt){
+			_animation.slideLeaderBoardDown();
+		});
+
+		mainMenuLayer.add(startGameButton);
+		mainMenuLayer.add(leaderBoardBtn);
+
+
+
+		return mainMenuLayer;
+	},
+	// Method: (NEW) gets on the game statistics layer on the top.... 
+	initGameStatsLayer: function(w, h){
+		var gameStatsLayer = new Kinetic.Layer({
+			width:w, height:h*0.1, x:0, y: 0 - h*0.1, id:"GAME_STATS_LAYER" //h*0.02
+		});
+
+		// Put the background...
+		var background = new Kinetic.Rect({ 	
+								width: gameStatsLayer.width(), 
+								height: gameStatsLayer.height(), 
+								x:-2, y:0,
+								fill:"#ac7441", 
+								stroke:"#29230b", strokeWidth:3
+						});
+		gameStatsLayer.add(background);
+
+		// Put the timer text...
+		var timerText = new Kinetic.Text({
+			text:"0:00", fontSize: 24, fontFamily: 'Calibri', fill: '#29230b', id:"GAME_TIMER_TXT", x:5, y:2
+		}); gameStatsLayer.add(timerText);
+
+		// Put the score text...
+		var scoreText = new Kinetic.Text({
+			text:"00000", fontSize: 24, fontFamily: 'Calibri', fill: '#29230b', id:"GAME_SCORE_TXT", align:'right',
+			x: gameStatsLayer.width() - 70, y:2
+		}); gameStatsLayer.add(scoreText);
+
+		// Then the timer bar...
+		var timerBarBG = new Kinetic.Rect({
+			x:6, y:timerText.height() + 7, height:5, width:gameStatsLayer.width() * 0.95, fill:"#ac7441", stroke:"#29230b"
+		}); gameStatsLayer.add(timerBarBG);
+
+		var timerBar = new Kinetic.Rect({
+			x:6, y:timerText.height() + 7, height:5, width:timerBarBG.width(), fill:"#29230b", stroke:"#29230b", id:"TIMER_BAR"
+		}); gameStatsLayer.add(timerBar);
+
+		// Update _animation attribute on timerBarOffset (needed for the animation...);
+		_animation.timerBarOffset = timerBar.width() / 121; // 121 kay 2 minutes + 1 offset... :)
+
+
+		return gameStatsLayer;
+	},
+	// Method: (NEW) Game Board Layer
+	initGameBoardLayer: function(w, h){
+		var gameBoardLayer = new Kinetic.Layer({
+			width:w, height:h*0.4, x:0, y:h*0.13, id:"GAME_BOARD_LAYER" //h*0.02
+		});
+
+		// Put the background...
+		var background = new Kinetic.Rect({ 	
+								width: gameBoardLayer.width(), 
+								height: gameBoardLayer.height(), 
+								x:0, y:0,
+								//fill:"#ac7441", 
+								stroke:"#29230b", strokeWidth:3
+						});
+
+		gameBoardLayer.add(background);
+
+
+		return gameBoardLayer;
+	},
+	// Method: (NEW) LeaderBoardLayer
+	initLeaderBoardLayer: function(w, h){
+		var leaderBoardLayer = new Kinetic.Layer({
+			width:w, height:h, x:0, y:0, id:"GAME_BOARD_LAYER" //h*0.02
+		});
+
+		// Background nigga!
+		var background = new Kinetic.Rect({ 	
+								width: leaderBoardLayer.width() * 0.8, 
+								height: leaderBoardLayer.height() * 0.8, 
+								x:leaderBoardLayer.width() * 0.1, 
+								y:leaderBoardLayer.height() * 0.1, 
+
+								cornerRadius:  leaderBoardLayer.width()*0.03,
+								fill:"#ac7441", 
+								stroke:"#29230b", strokeWidth:3
+		}); leaderBoardLayer.add(background);
+
+		// Close button nigga!
+		var closeButton = new Kinetic.Group({ }),
+			closeButtonBG = new Kinetic.Circle({
+				  radius: leaderBoardLayer.width()*0.07,
+				  fill: 'red',
+				  stroke: 'black',
+				  strokeWidth: 3,
+
+				  x:leaderBoardLayer.width() - background.x(), 
+				  y:leaderBoardLayer.height() - background.height()
+			});
+
+		closeButton.add(closeButtonBG);
+		closeButton.on('touchend', function(evt){
+			_animation.slideLeaderBoardUp();
+		});
+
+
+
+		leaderBoardLayer.add(closeButton);
+
+		// Reset on the height + position
+		leaderBoardLayer.y( 0 - leaderBoardLayer.height());
+
+		return leaderBoardLayer;
+	},
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	// Method: initialize main menu layer...
 	initMainGameLayer: function(w, h){
@@ -448,9 +673,16 @@ var _app = {
 			mainMenuPage = this.initMainMenuScreen(w, h),
 			gameScreen = this.initGameScreen(w, h);
 
+		var bg = new Kinetic.Image({
+			image: this.resources.gameBackground, width:mainLayer.width(), height:mainLayer.height()
+		}); mainLayer.add(bg);
+
 
 		mainLayer.add(mainMenuPage);
 		mainLayer.add(gameScreen);
+
+		var l = new Kinetic.Layer({ width:w, height:h*2, x:0, y:0, id:"GAME_LAYER" });
+		mainLayer.add(l);
 		return mainLayer;
 	},
 
@@ -460,11 +692,11 @@ var _app = {
 		var page = new Kinetic.Group({ width:w, height:h, x:0, y:0, id:"MAIN_MENU_PAGE" });
 
 		// Put the background on the page
-		var bg = new Kinetic.Image({
-	         image: this.resources.mainMenuBackground, width: page.width(), height:page.height()
-		}); page.add(bg);
+		///var bg = new Kinetic.Image({
+	    //     image: this.resources.mainMenuBackground, width: page.width(), height:page.height()
+		//}); page.add(bg);
 
-			// Add the button...
+		// Add the button...
 		var startGameButton = new Kinetic.Rect({ 	
 								width:page.width()*0.6, 
 								height:page.width()*0.1, 
@@ -501,8 +733,8 @@ var _app = {
 			//console.log(obj.parent.children[0]);
 
 			obj.draw();
-			_animation.slideMainMenuUp();
-			_gamePlay.startGame(evt);
+			_animation.animateNewGame();
+			//_gamePlay.startGame(evt);
 		});
 
 		// Add to mainMenuPage
@@ -517,13 +749,17 @@ var _app = {
 		var page = new Kinetic.Group({ width:w, height:h, x:0, y:h, id:"GAME_SCREEN" });
 
 		// Put the background on the gameScreen
-		var bg = new Kinetic.Image({
-	        image: this.resources.gameScreenBackground, width: page.width(), height:page.height()
-		}); page.add(bg);
+		//var bg = new Kinetic.Image({
+	     //   image: this.resources.gameScreenBackground, width: page.width(), height:page.height()
+		//}); page.add(bg);
 
 		// Add up the score and the timer text..
 		var gameStats = this.initGameStatsScreen(w, h);
 		page.add(gameStats);
+		// Tapos, reset the position of the whole stats container...
+		gameStats.y( 0 - gameStats.getParent().height() - gameStats.height() ); //Sa kawalan ng ibabaw gyud na siya...
+
+
 
 		// Then put the character placement grid...
 		//var characterGrid = this.initCharacterGrid(w, h, { w:4, h:5 });
@@ -533,7 +769,7 @@ var _app = {
 		//page.add(clickableGrid); page.add(characterGrid);
 
 		var gameGrid = this.initGameGrid(w, h, gameStats.y() + gameStats.height() + 5);
-		page.add(gameGrid);
+		//page.add(gameGrid);
 
 		return page;
 	},
@@ -753,7 +989,7 @@ var _app = {
 
 	// Method: initializes and draws the game stats screen...
 	initGameStatsScreen: function(w, h){
-		var gameStatsContainer = new Kinetic.Group({ width:w+4, height:h*0.12, x:0, y:h*0.05 });
+		var gameStatsContainer = new Kinetic.Group({ width:w+4, height:h*0.12, x:0, y:h*0.05, id:"GAME_STATS_CONT" });
 
 		// Put the background...
 		var background = new Kinetic.Rect({ 	
@@ -881,44 +1117,48 @@ var _animation = {
 
 	timerTextObject:null,
 	timerBarOffset:null,
+	//isAnimating: false,
 
 	counter: 0,
-	slideMainMenuUp: function(){
-		var mainMenu   = _app.screens[0].find('#MAIN_MENU_PAGE')[0],
-	        gameScreen = _app.screens[0].find('#GAME_SCREEN')[0];
 
-		// The second motion animation...
-		var scrollingDown = new Kinetic.Animation(function(frame) {
-	        mainMenu.y( mainMenu.y() - 18 );
-	        gameScreen.y( gameScreen.y() - 18);
-	        mainMenu.draw(); gameScreen.draw();
+	
+	animateNewGame: function(){
+		var layer = _app.screens[0];
 
-	        //console.log(gameScreen.y());
+		// Slide Down the pane...
+		this.slideMainMenuUp(layer);
 
-	        if (gameScreen.y() < 0){
-	        	this.stop();
-	        }
-
-	    }, _app.screens[0]);
-
-	    // The first motion animation...
-		var exciteMotion = new Kinetic.Animation(function(frame){
-			var distance = mainMenu.height() * 0.1;
-
-			mainMenu.y( mainMenu.y() + 3);
-			gameScreen.y( gameScreen.y() + 3);
-			mainMenu.draw(); gameScreen.draw();
-
-			if (distance < mainMenu.y()){
-				this.stop(); scrollingDown.start();
-			}
-
-		}, _app.screens[0]);
-
-		// Start the animation!
-		exciteMotion.start();
 	},
 
+	// Sliding the menu up from main menu to the game pane... :)
+	slideMainMenuUp: function(l){
+		var offset = 0 - (l.height() / 2);
+		var tween = new Kinetic.Tween({ 
+			node:l,
+			duration: 1,
+	        y:offset,
+	        easing: Kinetic.Easings.BounceEaseOut,
+	        onFinish: function(){
+	        	// After that, please animate the slide stats pane in nao...
+	        	_animation.slideStatsPaneIn();
+	        }
+		}); tween.play();
+	},
+	// Animate the stats menu in...
+	slideStatsPaneIn: function(){
+		var statsPane = _app.screens[1];
+		var tween = new Kinetic.Tween({
+			node:statsPane,
+			duration:1,
+			y:statsPane.getParent().height()*0.025,
+			easing:Kinetic.Easings.BounceEaseOut
+		}); tween.play();
+	},
+
+
+
+
+	// This is old... TO BE REPLACED...
 	slidePostGameUp: function(){
 		var postGame = _app.screens[1].find('#POST_GAME_CONT')[0];
 
@@ -951,6 +1191,40 @@ var _animation = {
 			}
 		});
 	},
+
+
+
+
+	// Leaderboard chuchu
+	slideLeaderBoardDown: function(){
+		var layer = _app.screens[3];
+		var tween = new Kinetic.Tween({
+			node: layer,
+			duration:1,
+			y:0,
+			easing:Kinetic.Easings.BounceEaseOut
+		}); tween.play();
+	},
+	slideLeaderBoardUp: function(){
+		var layer = _app.screens[3];
+		var tween = new Kinetic.Tween({
+			node: layer,
+			duration:1,
+			y:0 - layer.height(),
+			easing:Kinetic.Easings.BounceEaseIn
+		}); tween.play();
+	},
+
+
+
+
+
+	// Back to uranus...
+
+
+
+
+
 
 
 	// Button Animation/s...
@@ -1105,7 +1379,8 @@ var __cordova = {
 
 	init: function(){
 
-	}
+	},
+
 
 }
 
